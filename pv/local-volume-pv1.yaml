@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: test-local-pv1
+spec:
+  capacity:
+    storage: 30Mi
+  accessModes:
+  - ReadWriteMany
+  # ReadWriteOnce, ReadOnlyMany
+  persistentVolumeReclaimPolicy: Delete
+  #persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+#  hostPath:
+#    path: /data/volumes/pv1
+  claimRef:
+    name: test-local-pvc1
+    namespace: default
+  local:
+    path: /data/volumes/pv1
+  #local storage에는 무조건 필요함  
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - k8s-worker-node1

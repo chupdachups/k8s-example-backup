@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kubernetes-bootcamp-yaml
+spec:
+  containers:
+  - name: kubernetes-bootcamp
+    image: jocatalin/kubernetes-bootcamp:v1
+    ports:
+    - containerPort: 8080

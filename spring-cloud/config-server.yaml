@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config
+  namespace: spring-cloud
+  labels:
+    app: spring-cloud
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spring-cloud-config
+  template:
+    metadata:
+      labels:
+        app: spring-cloud-config
+    spec:
+      containers:
+      - name: config
+        image: chupdachups/spring-cloud-config:docker
+        ports:
+        - containerPort: 9001
+        env: 
+        - name: mq_host
+          value: rabbitmq.rabbits.svc.cluster.local
+        - name: mq_port
+          value: "5672"
+        - name: mq_id
+          value: guest
+        - name: mq_pw
+          value: guest
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: config
+  namespace: spring-cloud
+spec:
+  selector:
+    app: spring-cloud-config
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 9001
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: config
+  namespace: spring-cloud
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+spec:
+  rules:
+  - host: myconfig.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: config
+            port:
+              number: 80

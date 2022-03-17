@@ -1,0 +1,30 @@
+master node도 스케쥴링 설정 하기
+
+kubectl describe node | grep -i taint
+
+Taints:             node-role.kubernetes.io/master:NoSchedule
+
+Noschedule 로 되어 있으므로 스케쥴링이 안된다.
+
+해제
+kubectl taint nodes  {설정할 노드 이름} node-role.kubernetes.io/master-
+kubectl taint nodes  docker-vm node-role.kubernetes.io/master-
+
+복구
+kubectl taint nodes {설정할 노드 이름} node-role.kubernetes.io=master:NoSchedule
+kubectl taint nodes docker-vm node-role.kubernetes.io/master:NoSchedule
+kubectl taint nodes docker-vm node-role.kubernetes.io=master:NoSchedule
+## 마스터를 복구하면 테인트가 원래 모양 좀 다르다
+원래 - node-role.kubernetes.io/master:NoSchedule
+복구 - node-role.kubernetes.io=master:NoSchedule
+###################
+
+worker node 
+kubectl taint node k8s-worker-node1 key1=vlaue1:NoSchedule 
+
+전체
+kubectl taint nodes --all node-role.kubernetes.io/master-
+
+테인트 제어
+kubectl taint nodes node1 key1=value1:NoSchedule-
+kubectl taint nodes docker-vm node-role.kubernetes.io=master:NoSchedule-

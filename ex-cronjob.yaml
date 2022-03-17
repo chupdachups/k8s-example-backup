@@ -1,0 +1,25 @@
+# v1.21 이상부터는 batch/v1
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: ex-cronjob
+spec:
+  # 1분 마다 실행
+  # cron helper
+  # https://crontab.guru/
+  schedule: "*/1 * * * *"
+  successfulJobsHistoryLimit: 5 
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: hello
+            image: busybox
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - -c
+            - date; echo Hello from the Kubernetes cluster
+          restartPolicy: OnFailure

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sa-msaclass-a
+  namespace: msaclass-a
+  
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sa-msaclass-b
+  namespace: msaclass-b

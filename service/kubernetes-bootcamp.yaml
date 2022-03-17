@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kubernetes-bootcamp-v1
+  labels:
+    app: my-bootcamp
+spec:
+  containers:
+  - name: kubernetes-bootcamp
+    image: jocatalin/kubernetes-bootcamp:v1
+    ports:
+    - containerPort: 8080
+    
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kubernetes-bootcamp-v2
+  labels:
+    app: my-bootcamp
+spec:
+  containers:
+  - name: kubernetes-bootcamp
+    image: jocatalin/kubernetes-bootcamp:v2
+    ports:
+    - containerPort: 8080

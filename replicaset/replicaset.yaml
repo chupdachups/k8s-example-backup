@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: bootcamp-replicaset
+  labels:
+    app: my-bootcamp
+spec:
+  # 케이스에 따라 레플리카를 수정한다.
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-bootcamp
+  template:
+    metadata:
+      labels:
+        app: my-bootcamp
+    spec:
+      containers:
+      - name: kubernetes-bootcamp
+        image: jocatalin/kubernetes-bootcamp:v1

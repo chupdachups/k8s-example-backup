@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-config-app-deployment
+  labels:
+    app: k8s-config-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-config-app
+  template:
+    metadata:
+      labels:
+        app: k8s-config-app
+    spec:
+      containers:
+      - name: k8s-config-app
+        image: chupdachups/k8s-config-app:v1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        env:
+        - name: CONFIG_MESSAGE
+          valueFrom:
+            configMapKeyRef: 
+              name: config-message
+              key: config-message
+              
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: config-app-svc
+  labels:
+    app: k8s-config-app
+spec:
+  type: NodePort
+  selector:
+    app: k8s-config-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

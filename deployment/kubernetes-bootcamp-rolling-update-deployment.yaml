@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bootcamp-deployment
+  labels:
+    app: my-bootcamp
+spec:
+  replicas: 3
+  updateStrateqy:
+    # 기본은 OnDeleted
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: my-bootcamp
+  template:
+    metadata:
+      labels:
+        app: my-bootcamp
+    spec:
+      containers:
+      - name: kubernetes-bootcamp
+        image: jocatalin/kubernetes-bootcamp:v1
+        ports:
+        - containerPort: 8080

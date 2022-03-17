@@ -1,0 +1,239 @@
+. cgroup driver 설정
+
+  - 이미 설치된 docker에 대해서 cgroup driver를 변경해줘야 한다
+
+docker info
+"cgroupfs"로 설정되어 있는 것을 볼 수 있다. "systemd"로 변경
+
+
+sudo nano /etc/docker/daemon.json
+
+{
+
+    "exec-opts": ["native.cgroupdriver=systemd"],
+
+    "log-driver": "json-file",
+
+    "log-opts": {
+
+        "max-size": "100m"
+
+    },
+
+    "storage-driver": "overlay2"
+
+}
+
+sudo mkdir -p /etc/systemd/system/docker.service.d
+
+$ sudo systemctl daemon-reload
+
+$ sudo systemctl restart docker
+
+$ sudo docker info
+
+"cgroup driver"가 잘 변경된 것을 볼 수 있다.
+
+
+
+Kubernetes 기본 패키지 설치
+
+  - Master/Worker Node 모두 [ kubeadm, kubelet, kubectl ] 3개의 패키지가 설치되어야 한다.
+    . 부수적으로 [ kubernetes-cni, cri-tools ] 2개 패키지도 필요하다.
+
+  - 아래에서 최신 버전의 주소(파일명) 확인 (16.04 이후 버전 모두 동일)
+    . https://packages.cloud.google.com/apt/dists/kubernetes-xenial/main/binary-amd64/Packages
+
+
+
+wget https://packages.cloud.google.com/apt/pool/cri-tools_1.13.0-01_amd64_4ff4588f5589826775f4a3bebd95aec5b9fb591ba8fb89a62845ffa8efe8cf22.deb
+
+wget https://packages.cloud.google.com/apt/pool/kubeadm_1.20.1-00_amd64_7cd8d4021bb251862b755ed9c240091a532b89e6c796d58c3fdea7c9a72b878f.deb
+
+wget https://packages.cloud.google.com/apt/pool/kubectl_1.20.1-00_amd64_b927311062e6a4610d9ac3bc8560457ab23fbd697a3052c394a1d7cc9e46a17d.deb
+
+wget https://packages.cloud.google.com/apt/pool/kubelet_1.20.1-00_amd64_560a52294b8b339e0ca8ddbc480218e93ebb01daef0446887803815bcd0c41eb.deb
+
+wget https://packages.cloud.google.com/apt/pool/kubernetes-cni_0.8.7-00_amd64_ca2303ea0eecadf379c65bad855f9ad7c95c16502c0e7b3d50edcb53403c500f.deb
+
+
+
+$ sudo apt-get install socat conntrack ebtables
+
+
+$ sudo dpkg --install ./kubernetes-cni_0.8.7-00_amd64_ca2303ea0eecadf379c65bad855f9ad7c95c16502c0e7b3d50edcb53403c500f.deb
+
+$ sudo dpkg --install ./kubelet_1.20.1-00_amd64_560a52294b8b339e0ca8ddbc480218e93ebb01daef0446887803815bcd0c41eb.deb
+
+$ sudo dpkg --install ./cri-tools_1.13.0-01_amd64_4ff4588f5589826775f4a3bebd95aec5b9fb591ba8fb89a62845ffa8efe8cf22.deb
+
+$ sudo dpkg --install ./kubectl_1.20.1-00_amd64_b927311062e6a4610d9ac3bc8560457ab23fbd697a3052c394a1d7cc9e46a17d.deb
+
+$ sudo dpkg --install ./kubeadm_1.20.1-00_amd64_7cd8d4021bb251862b755ed9c240091a532b89e6c796d58c3fdea7c9a72b878f.deb
+
+
+
+Master Node 셋업
+
+  - kubeadm을 이용하여 Master Node 셋업을 진행하자.
+
+  - Master Node의 IP를 확인하자
+
+$ ifconfig
+
+이제 셋업 시작~!! (뒤의 IP는 방금 확인한 IP로 교체!!) private ip - 10.0.0.4  넣어야 하나 공용 IP 52.141.61.189 넣어야하나?
+
+$ sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=10.0.0.7
+
+
+
+사용자 계정에서 kubectl 실행을 위해 위의 가이드 내용 그대로 진행을 해보자.
+
+$ mkdir -p $HOME/.kube
+
+$ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+
+$ sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+
+
+잘 설치가 된 것을 확인해보자.
+
+$ kubectl get pods --all-namespaces
+
+$ kubectl get nodes
+
+
+
+Pod Network 환경을 맞춰야 하는데, k8s 를 위한 layer 3 환경을 구축해주는 flannel을 사용해보겠다.
+
+    . https://github.com/coreos/flannel/
+
+$ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+coredns가 pending에서 running으로 바뀌었고, flannel이 추가 되었고, Master Node가 Ready 상태가 된 것을 볼 수 있다.
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Worker Node 셋업
+
+  - 기본 환경 설치를 모두 했다면, 아래 명령어만 실행하면 된다.
+  - 아래 명령어는 Master Node 설치할 때 나왔던 가이드 밑에 있는 부분 그대로 하면 된다. (각자의 환경에 따라서 실행할 것!!!)
+
+$ sudo kubeadm join 10.0.0.4:6443 --token cx9a69.npisg7puk0bwughl \
+    --discovery-token-ca-cert-hash sha256:a7f0ae143472a9e4c40dc438866ba22c3918c10cd42f59067f298744d8afb4ec
+
+sudo kubeadm join 10.0.0.7:6443 --token 0e522s.m5x64jtdb885f4n8 \
+    --discovery-token-ca-cert-hash sha256:a5b6e6562d35e7249a8eb98f94ccbfc1d67b4f7f4fdde87b59b8776fc9c9ab20
+	
+	
+docker 설치
+
+
+cgroup driver 설정
+
+  - 이미 설치된 docker에 대해서 cgroup driver를 변경해줘야 한다
+
+docker info
+"cgroupfs"로 설정되어 있는 것을 볼 수 있다. "systemd"로 변경
+
+
+sudo vi /etc/docker/daemon.json
+
+{
+   "exec-opts": ["native.cgroupdriver=systemd"],
+   "log-driver": "json-file",
+   "log-opts": {
+        "max-size": "100m"
+   },
+   "storage-driver": "overlay2"
+}
+
+sudo mkdir -p /etc/systemd/system/docker.service.d
+
+$ sudo systemctl daemon-reload
+
+$ sudo systemctl restart docker
+
+$ sudo docker info
+
+"cgroup driver"가 잘 변경된 것을 볼 수 있다.
+
+
+
+
+Kubernetes 기본 패키지 설치
+
+  - Master/Worker Node 모두 [ kubeadm, kubelet, kubectl ] 3개의 패키지가 설치되어야 한다.
+    . 부수적으로 [ kubernetes-cni, cri-tools ] 2개 패키지도 필요하다.
+
+  - 아래에서 최신 버전의 주소(파일명) 확인 (16.04 이후 버전 모두 동일)
+    . https://packages.cloud.google.com/apt/dists/kubernetes-xenial/main/binary-amd64/Packages
+
+
+
+wget https://packages.cloud.google.com/apt/pool/cri-tools_1.13.0-01_amd64_4ff4588f5589826775f4a3bebd95aec5b9fb591ba8fb89a62845ffa8efe8cf22.deb
+
+wget https://packages.cloud.google.com/apt/pool/kubeadm_1.20.1-00_amd64_7cd8d4021bb251862b755ed9c240091a532b89e6c796d58c3fdea7c9a72b878f.deb
+
+wget https://packages.cloud.google.com/apt/pool/kubectl_1.20.1-00_amd64_b927311062e6a4610d9ac3bc8560457ab23fbd697a3052c394a1d7cc9e46a17d.deb
+
+wget https://packages.cloud.google.com/apt/pool/kubelet_1.20.1-00_amd64_560a52294b8b339e0ca8ddbc480218e93ebb01daef0446887803815bcd0c41eb.deb
+
+wget https://packages.cloud.google.com/apt/pool/kubernetes-cni_0.8.7-00_amd64_ca2303ea0eecadf379c65bad855f9ad7c95c16502c0e7b3d50edcb53403c500f.deb
+
+
+$ sudo apt-get install socat conntrack ebtables
+
+
+$ sudo dpkg --install ./kubernetes-cni_0.8.7-00_amd64_ca2303ea0eecadf379c65bad855f9ad7c95c16502c0e7b3d50edcb53403c500f.deb
+
+$ sudo dpkg --install ./kubelet_1.20.1-00_amd64_560a52294b8b339e0ca8ddbc480218e93ebb01daef0446887803815bcd0c41eb.deb
+
+$ sudo dpkg --install ./cri-tools_1.13.0-01_amd64_4ff4588f5589826775f4a3bebd95aec5b9fb591ba8fb89a62845ffa8efe8cf22.deb
+
+$ sudo dpkg --install ./kubectl_1.20.1-00_amd64_b927311062e6a4610d9ac3bc8560457ab23fbd697a3052c394a1d7cc9e46a17d.deb
+
+$ sudo dpkg --install ./kubeadm_1.20.1-00_amd64_7cd8d4021bb251862b755ed9c240091a532b89e6c796d58c3fdea7c9a72b878f.deb
+
+
+$ kubeadm token list
+token이 만료되면 없을 수 있다. 없으면
+kubeadm token create
+
+$ openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
+
+
+worker 노드에서 실행
+$ sudo kubeadm join 10.0.0.4:6443 --token 7jg30w.g5hddnb5enbt34o5 \
+    --discovery-token-ca-cert-hash sha256:a7f0ae143472a9e4c40dc438866ba22c3918c10cd42f59067f298744d8afb4ec
+
+#############
+ERROR 발생 시 FileAvailable--etc-kubernetes-pki-ca.crt]: /etc/kubernetes/pki/ca.crt already exists
+systemctl restart kubelet 
+systemctl restart docker
+kubeadm reset         
+rm -rf $HOME/.kube/config
+
+다시 join
+#############
+kubectl get nodes
+
+
+kubectl create deployment kubernetes-bootcamp --image=gcr.io/google-samples/kubernetes-bootcamp:v1
+
+kubectl get po -o wide
+
+curl http://10.244.1.2:8080
+
+
+
+
+
+
+
+##worker node reset 후 다시 접근
+worker node 에서 실행 후  node add 명령 다시 실행
+sudo kubeadm reset 

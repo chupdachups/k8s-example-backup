@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web
+spec:
+  serviceName: "nginx"
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: k8s.gcr.io/nginx-slim:0.3
+        ports:
+        - containerPort: 80
+          name: web
+#동적 pv 구성을 위한 설정 - default storage class가 반드시 있어야한다.
+#  volumeClaimTemplates:
+#  - metadata:
+#      name: statefulset-pv
+#    spec:
+#      accessModes: [ "ReadWriteOnce" ]
+#      storageClassName: local-storage
+#      resources:
+#        requests:
+#          storage: 10Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  ports:
+  - port: 80
+    name: web
+  clusterIP: None
+  selector:
+    app: nginx
+    

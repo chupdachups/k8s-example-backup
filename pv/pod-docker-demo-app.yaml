@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: local-pv-demo-app
+  namespace: default
+spec:
+  containers:
+  - name: spring-boot-demo-app
+    image: chupdachups/k8s-pv-test-demo-app 
+    ports:
+    - containerPort: 8070
+    volumeMounts:
+    - name: local-pv1
+      mountPath: "/my-src/docker-test-app/target/logs"
+  volumes:
+    - name: local-pv1
+      persistentVolumeClaim:
+        claimName: test-local-pvc1
+#  affinity:
+#    nodeAffinity:
+#      requiredDuringSchedulingIgnoredDuringExecution:
+#      #required:
+#        nodeSelectorTerms:
+#        - matchExpressions:
+#          - key: kubernetes.io/hostname
+#            operator: In
+#            values:
+#            - k8s-worker-node1
